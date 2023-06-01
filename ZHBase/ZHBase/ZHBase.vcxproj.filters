@@ -143,5 +143,11 @@
     <None Include="simpleColor.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="fish.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="fish.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -50,6 +50,7 @@ protected:
 	ProgramObject		m_program;			// mesh shader
 	ProgramObject		m_programSkybox;	// skybox shader
 	ProgramObject		m_programSimpleColor;	// mesh shader
+	ProgramObject		m_programFish;
 
 	VertexArrayObject	m_CubeVao;			// VAO
 	IndexBuffer			m_CubeIndices;		// index buffer
@@ -71,6 +72,10 @@ protected:
 	VertexArrayObject	m_QuadVao;
 	IndexBuffer			m_QuadIndices;
 	ArrayBuffer			m_QuadVertexBuffer;
+
+	VertexArrayObject	m_FishFinsVao;
+	IndexBuffer			m_FishFinsIndices;
+	ArrayBuffer			m_FishFinsVertexBuffer;
 	
 	gCamera				m_camera;
 
@@ -97,6 +102,8 @@ protected:
 	void InitSphere();
 
 	void InitQuad();
+
+	void InitFish();
 
 	static void SetTransfUniforms(ProgramObject& program, const glm::mat4& viewProj, const glm::mat4& world);
 

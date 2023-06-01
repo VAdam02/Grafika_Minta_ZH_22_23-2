@@ -266,12 +266,12 @@ void CMyApp::InitSphere() {
 			const int bottomLeft = i * (M + 1) + j + 1;
 			const int bottomRight = (i + 1) * (M + 1) + j + 1;
 
-			indices.push_back(topLeft);
 			indices.push_back(bottomLeft);
+			indices.push_back(topLeft);
 			indices.push_back(bottomRight);
 
-			indices.push_back(topLeft);
 			indices.push_back(bottomRight);
+			indices.push_back(topLeft);
 			indices.push_back(topRight);
 		}
 	}
@@ -350,6 +350,43 @@ void CMyApp::InitQuad()
 	);
 }
 
+void CMyApp::InitFish()
+{
+	Vertex verticles[] =
+	{
+		{ glm::vec3(-0.75, 0.15, 1.0), glm::vec3(sqrtf(2.0f) / 2.0, sqrtf(2.0f) / 2.0, 0.0), glm::vec2(0.0) },
+		{ glm::vec3(-0.25, -0.35, 0.0), glm::vec3(sqrtf(2.0f) / 2.0, sqrtf(2.0f) / 2.0, 0.0), glm::vec2(0.0) },
+		{ glm::vec3(-0.75, 0.15, -1.0), glm::vec3(sqrtf(2.0f) / 2.0, sqrtf(2.0f) / 2.0, 0.0), glm::vec2(0.0) },
+
+		{ glm::vec3(-0.55, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec2(0.0)},
+		{ glm::vec3(-0.55, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec2(0.0)},
+		{ glm::vec3(-0.25, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec2(0.0)},
+
+		{ glm::vec3(-0.75, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec2(0.0)},
+		{ glm::vec3(-1.25, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec2(0.0)},
+		{ glm::vec3(-1.25, -1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec2(0.0)},
+	};
+
+	GLuint indices[] =
+	{
+		0, 1, 2,
+		3, 4, 5,
+		6, 7, 8
+	};
+
+	m_FishFinsVertexBuffer.BufferData(verticles);
+	m_FishFinsIndices.BufferData(indices);
+
+	m_FishFinsVao.Init(
+		{
+			{ CreateAttribute<0, glm::vec3, 0, sizeof(Vertex)>, m_FishFinsVertexBuffer },
+			{ CreateAttribute<1, glm::vec3, sizeof(glm::vec3), sizeof(Vertex)>, m_FishFinsVertexBuffer },
+			{ CreateAttribute<2, glm::vec2, sizeof(glm::vec3) * 2, sizeof(Vertex)>, m_FishFinsVertexBuffer },
+		},
+		m_FishFinsIndices
+		);
+}
+
 void CMyApp::InitShaders()
 {
 	// a shadereket tároló program létrehozása az OpenGL-hez hasonló módon:
@@ -382,6 +419,23 @@ void CMyApp::InitShaders()
 
 	m_programSimpleColor.LinkProgram();
 
+
+	// a shadereket tároló program létrehozása az OpenGL-hez hasonló módon:
+	m_programFish.AttachShaders({
+		{ GL_VERTEX_SHADER, "fish.vert"},
+		{ GL_FRAGMENT_SHADER, "fish.frag"}
+		});
+
+	// attributomok osszerendelese a VAO es shader kozt
+	m_programFish.BindAttribLocations({
+		{ 0, "vs_in_pos" },				// VAO 0-as csatorna menjen a vs_in_pos-ba
+		{ 1, "vs_in_norm" },			// VAO 1-es csatorna menjen a vs_in_norm-ba
+		{ 2, "vs_in_tex" },				// VAO 2-es csatorna menjen a vs_in_tex-be
+		});
+
+	m_programFish.LinkProgram();
+
+
 	// shader program rövid létrehozása, egyetlen függvényhívással a fenti három:
 	m_programSkybox.Init(
 		{
@@ -412,6 +466,7 @@ bool CMyApp::Init()
 	InitSphere();
 
 	InitQuad();
+	InitFish();
 
 	// egyéb textúrák betöltése
 	m_pebblesTexture.FromFile("assets/pebbles.jpg");
@@ -529,6 +584,49 @@ void CMyApp::Render()
 
 	// Shader kikapcs
 	m_program.Unuse();
+
+
+	// fish
+	m_programFish.Use();
+
+	m_FishFinsVao.Bind();
+
+	m_programFish.SetUniform("color", glm::vec4(1.0, 0.5, 0.0, 1.0));
+	glm::mat4 fishWorld = glm::translate(glm::vec3(0.0, 2.0, 0.0));
+
+	m_FishFinsVao.Bind();
+
+	SetTransfUniforms(m_programFish, fishWorld, viewProj);
+
+	glDisable(GL_CULL_FACE);
+	glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, nullptr);
+	glEnable(GL_CULL_FACE);
+
+	m_FishFinsVao.Unbind();
+
+	m_SphereVao.Bind();
+
+	glm::mat4 fishBodyWorld = fishWorld * glm::scale(glm::vec3(1.0, 0.4, 0.4));
+	SetTransfUniforms(m_programFish, fishBodyWorld, viewProj);
+
+	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+
+	m_programFish.Unuse();
+
+	m_programSimpleColor.Use();
+	m_programSimpleColor.SetUniform("color", glm::vec4(0.5, 0.5, 0.5, 1.0));
+
+	glm::mat4 fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, 0.1)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
+	SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
+	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+
+	fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, -0.1)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
+	SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
+	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+
+	m_programSimpleColor.Unuse();
+
+	m_SphereVao.Unbind();
 
 
 	// -----------------------------------------------------------------------------------------

@@ -1,0 +1,38 @@
+#version 330 core
+
+// pipeline-ból bejövő per-fragment attribútumok
+in vec3 vs_out_pos;
+in vec3 vs_out_norm;
+in vec2 vs_out_tex;
+
+out vec4 fs_out_col;
+
+uniform vec4 color;
+
+// irány fényforrás: fény iránya
+uniform vec3 light_dir = vec3(1,-1,1);
+
+// fénytulajdonságok: ambiens, diffúz, ...
+uniform vec3 La = vec3(0.4, 0.4, 0.4);
+uniform vec3 Ld = vec3(0.6, 0.6, 0.6);
+
+uniform sampler2D texImage;
+
+void main()
+{
+
+	vec3 ambient = La;
+
+	vec3 normal = normalize(vs_out_norm);
+	if (!gl_FrontFacing) normal = -normal;
+
+	vec3 to_light = normalize(-light_dir);
+	
+	float cosa = clamp(dot(normal, to_light), 0, 1);
+
+	vec3 diffuse = cosa*Ld;
+	
+	float StripeFactror = mod(floor(vs_out_tex.x * 3.0), 2.0);
+
+	fs_out_col = vec4(ambient + diffuse, 1) * color * StripeFactror;
+}

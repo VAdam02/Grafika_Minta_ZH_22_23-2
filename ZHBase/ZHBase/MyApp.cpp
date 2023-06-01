@@ -510,6 +510,7 @@ void CMyApp::Update()
 {
 	static Uint32 last_time = SDL_GetTicks();
 	float delta_time = (SDL_GetTicks() - last_time) / 1000.0f;
+	m_ElapsedTime += delta_time;
 
 	m_camera.Update(delta_time);
 
@@ -589,9 +590,9 @@ void CMyApp::Render()
 	// fish
 	m_programFish.Use();
 
-	m_FishFinsVao.Bind();
-
 	m_programFish.SetUniform("color", glm::vec4(1.0, 0.5, 0.0, 1.0));
+	m_programFish.SetUniform("ElapsedTime", m_ElapsedTime);
+
 	glm::mat4 fishWorld = glm::translate(glm::vec3(0.0, 2.0, 0.0));
 
 	m_FishFinsVao.Bind();
@@ -616,11 +617,13 @@ void CMyApp::Render()
 	m_programSimpleColor.Use();
 	m_programSimpleColor.SetUniform("color", glm::vec4(0.5, 0.5, 0.5, 1.0));
 
-	glm::mat4 fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, 0.1)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
+	float EyeOffsetAlongZ = 0.05f * sinf(0.9 + m_ElapsedTime) * glm::pi<float>();
+
+	glm::mat4 fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, 0.1 + EyeOffsetAlongZ)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
 	SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
 	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
 
-	fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, -0.1)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
+	fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, -0.1 + EyeOffsetAlongZ)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
 	SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
 	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
 

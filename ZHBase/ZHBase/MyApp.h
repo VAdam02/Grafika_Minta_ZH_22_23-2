@@ -83,6 +83,8 @@ protected:
 	Texture2D			m_coralTexture;
 	TextureCubeMap		m_skyboxTexture;
 
+	float m_ElapsedTime = 0.0f;
+
 	struct Vertex
 	{
 		glm::vec3 p;

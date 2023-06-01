@@ -69,7 +69,7 @@ protected:
 	gCamera				m_camera;
 
 	Texture2D			m_pebblesTexture;
-	Texture2D			m_suzanneTexture;
+	Texture2D			m_coralTexture;
 	TextureCubeMap		m_skyboxTexture;
 
 	struct Vertex
@@ -93,5 +93,11 @@ protected:
 	static void SetTransfUniforms(ProgramObject& program, const glm::mat4& viewProj, const glm::mat4& world);
 
 	const int N = 30, M = 30;
+
+	struct CoralSettings
+	{
+		glm::vec3 position;
+		float rotation;
+	} m_coralSettings[4];
 };
 

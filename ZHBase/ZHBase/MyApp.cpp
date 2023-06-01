@@ -329,15 +329,25 @@ bool CMyApp::Init()
 
 	// egyéb textúrák betöltése
 	m_pebblesTexture.FromFile("assets/pebbles.jpg");
-	m_suzanneTexture.FromFile("assets/marron.jpg");
+	m_coralTexture.FromFile("assets/coral.png");
 
 	// mesh betöltése
-	m_mesh = std::unique_ptr<Mesh>(ObjParser::parse("assets/Suzanne.obj"));
+	m_mesh = std::unique_ptr<Mesh>(ObjParser::parse("assets/coral.obj"));
 	m_mesh->initBuffers();
 	
 	// kamera
 	m_camera.SetProj(glm::radians(60.0f), 640.0f / 480.0f, 0.01f, 1000.0f);
 	m_camera.SetView(glm::vec3(0.0f, 10.0f, 30.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// korall
+	m_coralSettings[0].position = glm::vec3(5.0f, 0.0f, -1.5f);
+	m_coralSettings[0].rotation = rand() / (float)RAND_MAX * glm::pi<float>();
+	m_coralSettings[1].position = glm::vec3(3.0f, 0.0f, 1.5f);
+	m_coralSettings[1].rotation = rand() / (float)RAND_MAX * glm::pi<float>();
+	m_coralSettings[2].position = glm::vec3(3.0f, 0.0f, -1.5f);
+	m_coralSettings[2].rotation = rand() / (float)RAND_MAX * glm::pi<float>();
+	m_coralSettings[3].position = glm::vec3(-5.0f, 0.0f, -3.0f);
+	m_coralSettings[3].rotation = rand() / (float)RAND_MAX * glm::pi<float>();
 
 	return true;
 }
@@ -373,15 +383,6 @@ void CMyApp::Render()
 	// Shader program bekapcsolása
 	m_program.Use();
 
-	// Suzanne
-	m_program.SetTexture("texImage", 0, m_suzanneTexture);
-
-	glm::mat4 suzanneWorld = glm::mat4(1.0f);
-	m_program.SetUniform("MVP", viewProj * suzanneWorld);
-	m_program.SetUniform("world", suzanneWorld);
-	m_program.SetUniform("worldIT", glm::inverse(glm::transpose(suzanneWorld)));
-	m_mesh->draw();
-
 	//akvárium alja
 	glm::mat4 pebblesWorld = glm::rotate(-glm::pi<float>() / 2.0f, glm::vec3(1.0, 0.0, 0.0))
 		* glm::scale(glm::vec3(15.0f, 8.0f, 1.0f));
@@ -391,6 +392,18 @@ void CMyApp::Render()
 	SetTransfUniforms(m_program, pebblesWorld, viewProj);
 
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+
+	// korall
+	m_program.SetTexture("texImage", 0, m_coralTexture);
+
+	for (int i = 0; i < 4; i++)
+	{
+		glm::mat4 coralWorld = glm::translate(m_coralSettings[i].position) *
+			glm::rotate(m_coralSettings[i].rotation, glm::vec3(0.0, 1.0, 0.0));
+		SetTransfUniforms(m_program, coralWorld, viewProj);
+		m_mesh->draw();
+	}
 
 	m_QuadVao.Unbind();
 

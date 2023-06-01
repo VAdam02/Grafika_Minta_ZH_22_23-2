@@ -231,6 +231,56 @@ void CMyApp::InitCone() {
 	);
 }
 
+void CMyApp::InitQuad()
+{
+	//struct Vertex{ glm::vec3 position; glm::vec3 normals; glm::vec2 texture; };
+	std::vector<Vertex> vertices =
+	{
+		{ glm::vec3(-0.5, -0.5, 0.0), glm::vec3(0, 0, 1), glm::vec2(0, 0) },
+		{ glm::vec3(+0.5, -0.5, 0.0), glm::vec3(0, 0, 1), glm::vec2(1, 0) },
+		{ glm::vec3(-0.5, +0.5, 0.0), glm::vec3(0, 0, 1), glm::vec2(0, 1) },
+		{ glm::vec3(+0.5, +0.5, 0.0), glm::vec3(0, 0, 1), glm::vec2(1, 1) }
+	};
+
+	std::vector<int> indices =
+	{
+		0,1,2,
+		2,1,3
+	};
+
+	//
+	// geometria definiálása (std::vector<...>) és GPU pufferekbe való feltöltése BufferData-val
+	//
+
+	// vertexek pozíciói:
+	/*
+	Az m_ShieldVertexBuffer konstruktora már létrehozott egy GPU puffer azonosítót és a most következő BufferData hívás ezt
+	1. bind-olni fogja GL_ARRAY_BUFFER target-re (hiszen m_ShieldVertexBuffer típusa ArrayBuffer) és
+	2. glBufferData segítségével áttölti a GPU-ra az argumentumban adott tároló értékeit
+
+	*/
+
+	m_QuadVertexBuffer.BufferData(vertices);
+
+	// és a primitíveket alkotó csúcspontok indexei (az előző tömbökből) - triangle list-el való kirajzolásra felkészülve
+	m_QuadIndices.BufferData(indices);
+
+	// geometria VAO-ban való regisztrálása
+	m_QuadVao.Init(
+		{
+			// 0-ás attribútum "lényegében" glm::vec3-ak sorozata és az adatok az m_ShieldVertexBuffer GPU pufferben vannak
+			{ CreateAttribute<		0,						// attribútum: 0
+									glm::vec3,				// CPU oldali adattípus amit a 0-ás attribútum meghatározására használtunk <- az eljárás a glm::vec3-ból kikövetkezteti, hogy 3 darab float-ból áll a 0-ás attribútum
+									0,						// offset: az attribútum tároló elejétől vett offset-je, byte-ban
+									sizeof(Vertex)			// stride: a következő csúcspont ezen attribútuma hány byte-ra van az aktuálistól
+								>, m_QuadVertexBuffer },
+			{ CreateAttribute<1, glm::vec3, (sizeof(glm::vec3)),     sizeof(Vertex)>, m_QuadVertexBuffer },
+			{ CreateAttribute<2, glm::vec2, (2 * sizeof(glm::vec3)), sizeof(Vertex)>, m_QuadVertexBuffer },
+		},
+		m_QuadIndices
+	);
+}
+
 void CMyApp::InitShaders()
 {
 	// a shadereket tároló program létrehozása az OpenGL-hez hasonló módon:
@@ -275,8 +325,10 @@ bool CMyApp::Init()
 	InitSkyBox();
 	InitCone();
 
+	InitQuad();
+
 	// egyéb textúrák betöltése
-	m_woodTexture.FromFile("assets/wood.jpg");
+	m_pebblesTexture.FromFile("assets/pebbles.jpg");
 	m_suzanneTexture.FromFile("assets/marron.jpg");
 
 	// mesh betöltése
@@ -304,6 +356,13 @@ void CMyApp::Update()
 	last_time = SDL_GetTicks();
 }
 
+void CMyApp::SetTransfUniforms(ProgramObject& program, const glm::mat4& world, const glm::mat4& viewProj)
+{
+	program.SetUniform("MVP", viewProj * world);
+	program.SetUniform("world", world);
+	program.SetUniform("worldIT", glm::transpose(glm::inverse(world)));
+}
+
 void CMyApp::Render()
 {
 	// töröljük a frampuffert (GL_COLOR_BUFFER_BIT) és a mélységi Z puffert (GL_DEPTH_BUFFER_BIT)
@@ -323,26 +382,17 @@ void CMyApp::Render()
 	m_program.SetUniform("worldIT", glm::inverse(glm::transpose(suzanneWorld)));
 	m_mesh->draw();
 
-	// Kocka
-	//m_program.Use(); nem hívjuk meg újra, hisz ugyanazt a shadert használják
-	m_CubeVao.Bind();
-	m_program.SetTexture("texImage", 0, m_woodTexture);
-	
-	glm::mat4 cubeWorld = glm::translate(glm::vec3(10.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(5.0f));
-	m_program.SetUniform("MVP", viewProj * cubeWorld);
-	m_program.SetUniform("world", cubeWorld);
-	m_program.SetUniform("worldIT", glm::inverse(glm::transpose(cubeWorld)));
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+	//akvárium alja
+	glm::mat4 pebblesWorld = glm::rotate(-glm::pi<float>() / 2.0f, glm::vec3(1.0, 0.0, 0.0))
+		* glm::scale(glm::vec3(15.0f, 8.0f, 1.0f));
 
-	// Kúp palást
-	m_ConeVao.Bind();
-	m_program.SetTexture("texImage", 0, m_woodTexture);
+	m_QuadVao.Bind();
+	m_program.SetTexture("texImage", 0, m_pebblesTexture);
+	SetTransfUniforms(m_program, pebblesWorld, viewProj);
 
-	glm::mat4 coneWorld = glm::translate(glm::vec3(-10.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(5.0f));
-	m_program.SetUniform("MVP", viewProj * coneWorld);
-	m_program.SetUniform("world", coneWorld);
-	m_program.SetUniform("worldIT", glm::inverse(glm::transpose(coneWorld)));
-	glDrawElements(GL_TRIANGLES, N * M * 6, GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+	m_QuadVao.Unbind();
 
 	// Shader kikapcs
 	m_program.Unuse();

@@ -62,9 +62,13 @@ protected:
 	IndexBuffer			m_ConeIndices;
 	ArrayBuffer			m_ConeVertexBuffer;
 
+	VertexArrayObject	m_QuadVao;
+	IndexBuffer			m_QuadIndices;
+	ArrayBuffer			m_QuadVertexBuffer;
+	
 	gCamera				m_camera;
 
-	Texture2D			m_woodTexture;
+	Texture2D			m_pebblesTexture;
 	Texture2D			m_suzanneTexture;
 	TextureCubeMap		m_skyboxTexture;
 
@@ -83,6 +87,10 @@ protected:
 	void InitCube();
 	void InitSkyBox();
 	void InitCone();
+
+	void InitQuad();
+
+	static void SetTransfUniforms(ProgramObject& program, const glm::mat4& viewProj, const glm::mat4& world);
 
 	const int N = 30, M = 30;
 };

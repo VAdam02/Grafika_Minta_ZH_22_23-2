@@ -194,10 +194,10 @@ void CMyApp::InitCone() {
 	std::vector<int> indices;
 	for (int i = 0; i < N; ++i) {
 		for (int j = 0; j < M; ++j) {
-			const int topLeft		= i			* (M + 1)	+ j;
-			const int topRight		= (i + 1)	* (M + 1)	+ j;
-			const int bottomLeft	= i			* (M + 1)	+ j + 1;
-			const int bottomRight	= (i + 1)	* (M + 1)	+ j + 1;
+			const int topLeft = i * (M + 1) + j;
+			const int topRight = (i + 1) * (M + 1) + j;
+			const int bottomLeft = i * (M + 1) + j + 1;
+			const int bottomRight = (i + 1) * (M + 1) + j + 1;
 
 			indices.push_back(topLeft);
 			indices.push_back(bottomLeft);
@@ -228,6 +228,75 @@ void CMyApp::InitCone() {
 			{ CreateAttribute<2, glm::vec2, (2 * sizeof(glm::vec3)), sizeof(Vertex)>, m_ConeVertexBuffer },
 		},
 		m_ConeIndices
+	);
+}
+
+void CMyApp::InitSphere() {
+	std::vector<Vertex> vertices;
+	for (int i = 0; i <= N; ++i) {
+		for (int j = 0; j <= M; ++j) {
+			float u = i / (float)N;
+			float v = j / (float)M;
+
+			Vertex vert;
+			vert.p = //GetPos(u, v);
+				glm::vec3(
+					sin(v * glm::pi<float>() * cos(u * glm::pi<float>() * 2.0f)),
+					cos(v * glm::pi<float>()),
+					sin(v * glm::pi<float>()) * sin(u * glm::pi<float>() * 2.0f)
+				);
+			vert.n = //GetNorm(u, v);
+				glm::vec3(
+					sin(v * glm::pi<float>() * cos(u * glm::pi<float>() * 2.0f)),
+					cos(v * glm::pi<float>()),
+					sin(v * glm::pi<float>()) * sin(u * glm::pi<float>() * 2.0f)
+				);
+			vert.t = //GetTex(u, v);
+				glm::vec2(1 - u, 1 - v);
+
+			vertices.push_back(vert);
+		}
+	}
+
+	std::vector<int> indices;
+	for (int i = 0; i < N; ++i) {
+		for (int j = 0; j < M; ++j) {
+			const int topLeft = i * (M + 1) + j;
+			const int topRight = (i + 1) * (M + 1) + j;
+			const int bottomLeft = i * (M + 1) + j + 1;
+			const int bottomRight = (i + 1) * (M + 1) + j + 1;
+
+			indices.push_back(topLeft);
+			indices.push_back(bottomLeft);
+			indices.push_back(bottomRight);
+
+			indices.push_back(topLeft);
+			indices.push_back(bottomRight);
+			indices.push_back(topRight);
+		}
+	}
+	
+	m_SphereIndexNum = indices.size();
+
+
+	m_SphereVertexBuffer.BufferData(vertices);
+
+	// és a primitíveket alkotó csúcspontok indexei (az előző tömbökből) - triangle list-el való kirajzolásra felkészülve
+	m_SphereIndices.BufferData(indices);
+
+	// geometria VAO-ban való regisztrálása
+	m_SphereVao.Init(
+		{
+			// 0-ás attribútum "lényegében" glm::vec3-ak sorozata és az adatok az m_ConeVertexBuffer GPU pufferben vannak
+			{ CreateAttribute<		0,						// attribútum: 0
+									glm::vec3,				// CPU oldali adattípus amit a 0-ás attribútum meghatározására használtunk <- az eljárás a glm::vec3-ból kikövetkezteti, hogy 3 darab float-ból áll a 0-ás attribútum
+									0,						// offset: az attribútum tároló elejétől vett offset-je, byte-ban
+									sizeof(Vertex)			// stride: a következő csúcspont ezen attribútuma hány byte-ra van az aktuálistól
+								>, m_SphereVertexBuffer },
+			{ CreateAttribute<1, glm::vec3, (sizeof(glm::vec3)), sizeof(Vertex)>, m_SphereVertexBuffer },
+			{ CreateAttribute<2, glm::vec2, (2 * sizeof(glm::vec3)), sizeof(Vertex)>, m_SphereVertexBuffer },
+		},
+		m_SphereIndices
 	);
 }
 
@@ -298,6 +367,21 @@ void CMyApp::InitShaders()
 
 	m_program.LinkProgram();
 
+	// a shadereket tároló program létrehozása az OpenGL-hez hasonló módon:
+	m_programSimpleColor.AttachShaders({
+		{ GL_VERTEX_SHADER, "myVert.vert"},
+		{ GL_FRAGMENT_SHADER, "simpleColor.frag"}
+		});
+
+	// attributomok osszerendelese a VAO es shader kozt
+	m_programSimpleColor.BindAttribLocations({
+		{ 0, "vs_in_pos" },				// VAO 0-as csatorna menjen a vs_in_pos-ba
+		{ 1, "vs_in_norm" },			// VAO 1-es csatorna menjen a vs_in_norm-ba
+		{ 2, "vs_in_tex" },				// VAO 2-es csatorna menjen a vs_in_tex-be
+		});
+
+	m_programSimpleColor.LinkProgram();
+
 	// shader program rövid létrehozása, egyetlen függvényhívással a fenti három:
 	m_programSkybox.Init(
 		{
@@ -325,6 +409,8 @@ bool CMyApp::Init()
 	InitSkyBox();
 	InitCone();
 
+	InitSphere();
+
 	InitQuad();
 
 	// egyéb textúrák betöltése
@@ -348,6 +434,15 @@ bool CMyApp::Init()
 	m_coralSettings[2].rotation = rand() / (float)RAND_MAX * glm::pi<float>();
 	m_coralSettings[3].position = glm::vec3(-5.0f, 0.0f, -3.0f);
 	m_coralSettings[3].rotation = rand() / (float)RAND_MAX * glm::pi<float>();
+
+	//buborekok
+	for (int i = 0; i < m_bubblePositions.size(); ++i)
+	{
+		m_bubblePositions[i] = glm::vec3(
+			3.0f,
+			(rand() / (float)RAND_MAX * 5.0f + 1.0f),
+			2.0f);
+	}
 
 	return true;
 }
@@ -438,6 +533,28 @@ void CMyApp::Render()
 	// végül állítsuk vissza
 	glDepthFunc(prevDepthFnc);
 
+	//blending
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	m_programSimpleColor.Use();
+
+	m_SphereVao.Bind();
+	m_programSimpleColor.SetUniform("color", glm::vec4(0.5));
+
+	for (int i = 0; i < m_bubblePositions.size(); ++i)
+	{
+		glm::mat4 bubbleWorld = glm::translate(m_bubblePositions[i]) *
+			glm::scale(glm::vec3(0.1f));
+
+		SetTransfUniforms(m_programSimpleColor, bubbleWorld, viewProj);
+
+		glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+	}
+
+	m_programSimpleColor.Unuse();
+
+	glDisable(GL_BLEND);
 
 	//ImGui Testwindow
 	ImGui::ShowTestWindow();

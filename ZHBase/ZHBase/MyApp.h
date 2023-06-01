@@ -49,6 +49,7 @@ protected:
 	// shaderekhez szükséges változók
 	ProgramObject		m_program;			// mesh shader
 	ProgramObject		m_programSkybox;	// skybox shader
+	ProgramObject		m_programSimpleColor;	// mesh shader
 
 	VertexArrayObject	m_CubeVao;			// VAO
 	IndexBuffer			m_CubeIndices;		// index buffer
@@ -61,6 +62,11 @@ protected:
 	VertexArrayObject	m_ConeVao;
 	IndexBuffer			m_ConeIndices;
 	ArrayBuffer			m_ConeVertexBuffer;
+
+	VertexArrayObject	m_SphereVao;
+	IndexBuffer			m_SphereIndices;
+	ArrayBuffer			m_SphereVertexBuffer;
+	GLsizei				m_SphereIndexNum;
 
 	VertexArrayObject	m_QuadVao;
 	IndexBuffer			m_QuadIndices;
@@ -88,6 +94,8 @@ protected:
 	void InitSkyBox();
 	void InitCone();
 
+	void InitSphere();
+
 	void InitQuad();
 
 	static void SetTransfUniforms(ProgramObject& program, const glm::mat4& viewProj, const glm::mat4& world);
@@ -99,5 +107,7 @@ protected:
 		glm::vec3 position;
 		float rotation;
 	} m_coralSettings[4];
+
+	std::array<glm::vec3, 3> m_bubblePositions;
 };
 

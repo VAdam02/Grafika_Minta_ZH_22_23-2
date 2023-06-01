@@ -140,5 +140,8 @@
     <None Include="Includes\VertexArrayObject.inl">
       <Filter>GL utilities</Filter>
     </None>
+    <None Include="simpleColor.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

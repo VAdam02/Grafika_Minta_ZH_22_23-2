@@ -24,6 +24,8 @@ void main()
 	vec3 ambient = La;
 
 	vec3 normal = normalize(vs_out_norm);
+	if (!gl_FrontFacing) normal = -normal;
+
 	vec3 to_light = normalize(-light_dir);
 	
 	float cosa = clamp(dot(normal, to_light), 0, 1);

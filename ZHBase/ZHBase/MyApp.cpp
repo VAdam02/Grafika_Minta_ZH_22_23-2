@@ -468,6 +468,31 @@ void CMyApp::SetTransfUniforms(ProgramObject& program, const glm::mat4& world, c
 	program.SetUniform("worldIT", glm::transpose(glm::inverse(world)));
 }
 
+void CMyApp::DrawAquariumBox(glm::mat4 viewProj, glm::mat4 aquaWorld, bool needTop)
+{
+	static const glm::mat4 faceMatArray[] =
+	{
+		glm::translate(glm::vec3(0.0, 4.0, 4.0)) * glm::scale(glm::vec3(15.0, 8.0, 1.0)),
+		glm::rotate(glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::translate(glm::vec3(0.0, 4.0, 4.0)) * glm::scale(glm::vec3(15.0, 8.0, 1.0)),
+		glm::rotate(glm::radians(90.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::translate(glm::vec3(0.0, 4.0, 7.5)) * glm::scale(glm::vec3(8.0, 8.0, 1.0)),
+		glm::rotate(glm::radians(-90.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::translate(glm::vec3(0.0, 4.0, 7.5)) * glm::scale(glm::vec3(8.0, 8.0, 1.0)),
+		glm::translate(glm::vec3(0.0, 8.0, 0.0)) * glm::rotate(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)) * glm::scale(glm::vec3(15.0, 8.0, 1.0))
+	};
+
+	int faceNum = (needTop ? 5 : 4);
+
+	glDisable(GL_CULL_FACE);
+	m_QuadVao.Bind();
+	for (int i = 0; i < faceNum; ++i)
+	{
+		glm::mat4 tmpWorld = aquaWorld * faceMatArray[i];
+		SetTransfUniforms(m_programSimpleColor, tmpWorld, viewProj);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+	}
+	m_QuadVao.Unbind();
+	glEnable(GL_CULL_FACE);
+}
+
 void CMyApp::Render()
 {
 	// töröljük a frampuffert (GL_COLOR_BUFFER_BIT) és a mélységi Z puffert (GL_DEPTH_BUFFER_BIT)
@@ -551,6 +576,11 @@ void CMyApp::Render()
 
 		glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
 	}
+	m_SphereVao.Unbind();
+
+	//glass
+	m_programSimpleColor.SetUniform("color", glm::vec4(1.0, 1.0, 1.0, 0.1));
+	DrawAquariumBox(viewProj, glm::mat4(1.0), false);
 
 	m_programSimpleColor.Unuse();
 

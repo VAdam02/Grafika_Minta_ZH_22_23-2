@@ -109,5 +109,7 @@ protected:
 	} m_coralSettings[4];
 
 	std::array<glm::vec3, 3> m_bubblePositions;
+
+	void DrawAquariumBox(glm::mat4 viewProj, glm::mat4 aquaWorld, bool needTop = false);
 };
 

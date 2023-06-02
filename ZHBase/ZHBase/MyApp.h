@@ -84,6 +84,7 @@ protected:
 	TextureCubeMap		m_skyboxTexture;
 
 	float m_ElapsedTime = 0.0f;
+	float m_waterHeightAspect = 0.8f;
 
 	struct Vertex
 	{

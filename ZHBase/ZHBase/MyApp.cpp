@@ -632,6 +632,7 @@ void CMyApp::Render()
 	m_SphereVao.Unbind();
 
 
+
 	// -----------------------------------------------------------------------------------------
 
 
@@ -678,6 +679,10 @@ void CMyApp::Render()
 		glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
 	}
 	m_SphereVao.Unbind();
+
+	//water
+	m_programSimpleColor.SetUniform("color", glm::vec4(0.0, 0.1, 0.6, 0.3));
+	DrawAquariumBox(viewProj, glm::scale(glm::vec3(0.99, m_waterHeightAspect, 0.99)), true);
 
 	//glass
 	m_programSimpleColor.SetUniform("color", glm::vec4(1.0, 1.0, 1.0, 0.1));

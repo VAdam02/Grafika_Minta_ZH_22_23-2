@@ -499,6 +499,11 @@ bool CMyApp::Init()
 			2.0f);
 	}
 
+	//halak
+	fishStateArray.push_back(FishState(0.3, 5.0, 0.1));
+	fishStateArray.push_back(FishState(0.4, 6.0, 0.2));
+	fishStateArray.push_back(FishState(0.8, 2.0, 0.1));
+
 	return true;
 }
 
@@ -515,6 +520,11 @@ void CMyApp::Update()
 	m_camera.Update(delta_time);
 
 	last_time = SDL_GetTicks();
+
+	for (auto& fishState : fishStateArray)
+	{
+		fishState.Param += delta_time * fishState.SizeFactor;
+	}
 }
 
 void CMyApp::SetTransfUniforms(ProgramObject& program, const glm::mat4& world, const glm::mat4& viewProj)
@@ -547,6 +557,15 @@ void CMyApp::DrawAquariumBox(glm::mat4 viewProj, glm::mat4 aquaWorld, bool needT
 	}
 	m_QuadVao.Unbind();
 	glEnable(GL_CULL_FACE);
+}
+
+static glm::vec3 GetFishPath(float t)
+{
+	return glm::vec3(
+		6.0f * cosf(t),
+		0.0f,
+		2.0f * sinf(2.0f * t)
+	);
 }
 
 void CMyApp::Render()
@@ -588,49 +607,66 @@ void CMyApp::Render()
 
 
 	// fish
-	m_programFish.Use();
 
-	m_programFish.SetUniform("color", glm::vec4(1.0, 0.5, 0.0, 1.0));
-	m_programFish.SetUniform("ElapsedTime", m_ElapsedTime);
+	for (auto& fishState : fishStateArray)
+	{
 
-	glm::mat4 fishWorld = glm::translate(glm::vec3(0.0, 2.0, 0.0));
+		m_programFish.Use();
 
-	m_FishFinsVao.Bind();
+		m_programFish.SetUniform("color", glm::vec4(1.0, 0.5, 0.0, 1.0));
+		m_programFish.SetUniform("ElapsedTime", m_ElapsedTime);
 
-	SetTransfUniforms(m_programFish, fishWorld, viewProj);
+		glm::vec3 fishPos = GetFishPath(fishState.Param);
+		glm::vec3 fishForward = glm::normalize(
+			GetFishPath(fishState.Param + 0.01f) - fishPos
+		);
+		glm::vec3 fishRight = glm::rotate(-glm::pi<float>() / 2.0f, glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(fishForward, 0.0);
 
-	glDisable(GL_CULL_FACE);
-	glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, nullptr);
-	glEnable(GL_CULL_FACE);
+		fishPos.y = (sinf(fishState.Height * m_ElapsedTime * 0.1) * 0.5 + 0.5) * 4.0 + 1.0;
 
-	m_FishFinsVao.Unbind();
+		glm::mat4 fishRot(1.0);
+		fishRot[0] = glm::vec4(fishForward, 0.0);
+		fishRot[2] = glm::vec4(fishRight, 0.0);
 
-	m_SphereVao.Bind();
 
-	glm::mat4 fishBodyWorld = fishWorld * glm::scale(glm::vec3(1.0, 0.4, 0.4));
-	SetTransfUniforms(m_programFish, fishBodyWorld, viewProj);
+		glm::mat4 fishWorld = glm::translate(fishPos) * fishRot * glm::scale(glm::vec3(fishState.SizeFactor));
 
-	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+		m_FishFinsVao.Bind();
 
-	m_programFish.Unuse();
+		SetTransfUniforms(m_programFish, fishWorld, viewProj);
 
-	m_programSimpleColor.Use();
-	m_programSimpleColor.SetUniform("color", glm::vec4(0.5, 0.5, 0.5, 1.0));
+		glDisable(GL_CULL_FACE);
+		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, nullptr);
+		glEnable(GL_CULL_FACE);
 
-	float EyeOffsetAlongZ = 0.05f * sinf(0.9 + m_ElapsedTime) * glm::pi<float>();
+		m_FishFinsVao.Unbind();
 
-	glm::mat4 fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, 0.1 + EyeOffsetAlongZ)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
-	SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
-	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+		m_SphereVao.Bind();
 
-	fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, -0.1 + EyeOffsetAlongZ)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
-	SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
-	glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+		glm::mat4 fishBodyWorld = fishWorld * glm::scale(glm::vec3(1.0, 0.4, 0.4));
+		SetTransfUniforms(m_programFish, fishBodyWorld, viewProj);
 
-	m_programSimpleColor.Unuse();
+		glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
 
-	m_SphereVao.Unbind();
+		m_programFish.Unuse();
 
+		m_programSimpleColor.Use();
+		m_programSimpleColor.SetUniform("color", glm::vec4(0.5, 0.5, 0.5, 1.0));
+
+		float EyeOffsetAlongZ = 0.05f * sinf(0.9 + m_ElapsedTime) * glm::pi<float>();
+
+		glm::mat4 fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, 0.1 + EyeOffsetAlongZ)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
+		SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
+		glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+
+		fishEyeWorld = fishWorld * glm::translate(glm::vec3(0.9, 0.12, -0.1 + EyeOffsetAlongZ)) * glm::scale(glm::vec3(0.06, 0.06, 0.06));
+		SetTransfUniforms(m_programSimpleColor, fishEyeWorld, viewProj);
+		glDrawElements(GL_TRIANGLES, m_SphereIndexNum, GL_UNSIGNED_INT, nullptr);
+
+		m_programSimpleColor.Unuse();
+
+		m_SphereVao.Unbind();
+	}
 
 
 	// -----------------------------------------------------------------------------------------

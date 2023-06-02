@@ -120,6 +120,19 @@ protected:
 
 	std::array<glm::vec3, 3> m_bubblePositions;
 
+	struct FishState
+	{
+		float SizeFactor;
+		float Height;
+		float Param;
+
+		FishState(float sf, float h, float p):
+			SizeFactor(sf), Height(h), Param(p)
+		{}
+	};
+	
+	std::vector<FishState> fishStateArray;
+
 	void DrawAquariumBox(glm::mat4 viewProj, glm::mat4 aquaWorld, bool needTop = false);
 };
 
